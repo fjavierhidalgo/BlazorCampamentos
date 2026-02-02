@@ -1,0 +1,916 @@
+@page "/file-upload"
+@inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Forms
+@using OfficeOpenXml
+
+<div class="file-upload-container">
+    <h3>Seleccionar Archivo</h3>
+    
+    <div class="file-input-group">
+        <input 
+            type="text" 
+            class="file-path-input" 
+            placeholder="Nombre del archivo..." 
+            value="@SelectedFileName" 
+            readonly />
+        
+        <button 
+            class="btn-select-file" 
+            @onclick="TriggerFileInput">
+            Seleccionar Archivo
+        </button>
+
+        <InputFile 
+            @ref="FileInput" 
+            hidden 
+            OnChange="@HandleFileSelected" 
+            style="display: none;" />
+    </div>
+
+    @if (!string.IsNullOrEmpty(SelectedFileName))
+    {
+        <div class="file-info">
+            <strong>Archivo seleccionado:</strong><br/>
+            <span style="word-break: break-all;">@SelectedFileName</span>
+            @if (SelectedFileSize > 0)
+            {
+                <br/>
+                <strong>Tamaño:</strong> @FormatFileSize(SelectedFileSize)
+            }
+            @if (!string.IsNullOrEmpty(SelectedFileType))
+            {
+                <br/>
+                <strong>Tipo:</strong> @SelectedFileType
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(FormatError))
+    {
+        <div class="error-message">
+            <strong>Error:</strong> @FormatError
+        </div>
+    }
+
+    @if (ExcelData.Count > 0)
+    {
+        <div class="table-container">
+            <div class="table-header">
+                <button class="btn-toggle" @onclick="ToggleTableVisibility">
+                    @(IsTableVisible ? "-" : "+")
+                </button>
+                <h4>Datos del Archivo Excel (@ExcelData.Count registros)</h4>
+                <button class="btn-cambiar-orden" @onclick="CambiarOrdenTabla">
+                    Orden: @(OrdenTabla == "puntuacion" ? "Puntuación" : "Id")
+                </button>
+            </div>
+            
+            @if (IsTableVisible)
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Apellidos</th>
+                            <th>Nombre</th>
+                            <th>DNI</th>
+                            <th>Teléfono 1</th>
+                            <th>Fecha 1</th>
+                            <th>Fecha 2</th>
+                            <th>Fecha 3</th>
+                            <th>Fecha 4</th>
+                            <th>Fecha 5</th>
+                            <th>Puntuación Total</th>
+                            <th>Documentación Falta</th>
+                            <th>Fecha Registro</th>
+                            <th>Fecha Seleccionada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in ObtenerFilasOrdenadas())
+                        {
+                            <tr>
+                                <td>@row.Id</td>
+                                <td>@row.Apellidos</td>
+                                <td>@row.Nombre</td>
+                                <td>@row.DNI</td>
+                                <td>@row.Telefono1</td>
+                                <td>@row.Fecha1</td>
+                                <td>@row.Fecha2</td>
+                                <td>@row.Fecha3</td>
+                                <td>@row.Fecha4</td>
+                                <td>@row.Fecha5</td>
+                                <td>@row.PuntuacionTotal</td>
+                                <td>@row.DocumentacionFalta</td>
+                                <td>@row.FechaRegistro</td>
+                                <td>@row.FechaSeleccionada</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <div class="input-container">
+            <div class="input-field-group">
+                <label for="numeroPlazas">Número de Plazas:</label>
+                <input 
+                    type="number" 
+                    id="numeroPlazas"
+                    class="input-field"
+                    @bind="NumeroPlazas"
+                    min="0" />
+            </div>
+            <div class="input-field-group">
+                <label for="numeroFechas">Número de Fechas:</label>
+                <input 
+                    type="number" 
+                    id="numeroFechas"
+                    class="input-field"
+                    @bind="NumeroFechas"
+                    min="0" />
+            </div>
+            <button class="btn-asignar-fechas" @onclick="AsignarFechas">
+                Asignar Fechas
+            </button>
+        </div>
+
+        @if (FechasAsignadas)
+        {
+            <div class="results-table-container">
+                <div class="results-table-header">
+                    <h4>Resultados de Asignación (@ObtenerFilasSeleccionadas().Count registros asignados)</h4>
+                </div>
+                
+                @if (ObtenerFilasSeleccionadas().Count > 0)
+                {
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Apellidos</th>
+                                <th>Nombre</th>
+                                <th>DNI</th>
+                                <th>Teléfono 1</th>
+                                <th>Puntuación Total</th>
+                                <th>Fecha Registro</th>
+                                <th>Fecha Seleccionada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in ObtenerFilasSeleccionadas())
+                            {
+                                <tr>
+                                    <td>@row.Id</td>
+                                    <td>@row.Apellidos</td>
+                                    <td>@row.Nombre</td>
+                                    <td>@row.DNI</td>
+                                    <td>@row.Telefono1</td>
+                                    <td>@row.PuntuacionTotal</td>
+                                    <td>@row.FechaRegistro</td>
+                                    <td>@row.FechaSeleccionada</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="no-results-message">
+                        No se asignaron registros a ninguna fecha
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .file-upload-container {
+        padding: 20px;
+        font-family: Arial, sans-serif;
+    }
+
+    .file-upload-container h3 {
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .file-input-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .file-path-input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        background-color: #f9f9f9;
+    }
+
+    .btn-select-file {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .btn-select-file:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-select-file:active {
+        background-color: #003d82;
+    }
+
+    .file-info {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e7f3ff;
+        border-left: 4px solid #007bff;
+        border-radius: 4px;
+        color: #004085;
+    }
+
+    .error-message {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f8d7da;
+        border-left: 4px solid #dc3545;
+        border-radius: 4px;
+        color: #721c24;
+    }
+
+    .table-container {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .table-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        justify-content: space-between;
+    }
+
+    .table-header h4 {
+        margin: 0;
+        color: #333;
+        flex: 1;
+    }
+
+    .btn-toggle {
+        padding: 5px 12px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-toggle:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-toggle:active {
+        background-color: #003d82;
+    }
+
+    .btn-cambiar-orden {
+        padding: 8px 15px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .btn-cambiar-orden:hover {
+        background-color: #5a6268;
+    }
+
+    .btn-cambiar-orden:active {
+        background-color: #4e555b;
+    }
+
+    .btn-toggle:active {
+        background-color: #003d82;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        font-size: 12px;
+    }
+
+    .data-table thead {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .data-table th {
+        padding: 8px 10px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #0056b3;
+    }
+
+    .data-table td {
+        padding: 6px 8px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+
+    .data-table tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    .input-container {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f0f8ff;
+        border-left: 4px solid #28a745;
+        border-radius: 4px;
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+    }
+
+    .input-field-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .input-field-group label {
+        margin: 0;
+        font-weight: 600;
+        color: #333;
+        white-space: nowrap;
+    }
+
+    .input-field {
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+        width: 150px;
+    }
+
+    .input-field:focus {
+        outline: none;
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+
+    .btn-asignar-fechas {
+        align-self: flex-end;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .btn-asignar-fechas:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-asignar-fechas:active {
+        background-color: #003d82;
+    }
+
+    .results-table-container {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #f0fff4;
+        border-left: 4px solid #28a745;
+        border-radius: 4px;
+    }
+
+    .results-table-header {
+        margin-bottom: 15px;
+    }
+
+    .results-table-header h4 {
+        margin: 0;
+        color: #155724;
+    }
+
+    .results-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        font-size: 12px;
+    }
+
+    .results-table thead {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .results-table th {
+        padding: 8px 10px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #1e7e34;
+    }
+
+    .results-table td {
+        padding: 6px 8px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .results-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+
+    .results-table tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    .no-results-message {
+        padding: 15px;
+        background-color: #d4edda;
+        color: #155724;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: 500;
+    }
+</style>
+
+@code {
+    private InputFile? FileInput;
+    private string SelectedFileName = string.Empty;
+    private long SelectedFileSize = 0;
+    private string SelectedFileType = string.Empty;
+    private List<ExcelRow> ExcelData = new();
+    private bool IsTableVisible = false;
+    private int NumeroPlazas = 0;
+    private int NumeroFechas = 0;
+    private string FormatError = string.Empty;
+    private string OrdenTabla = "puntuacion"; // "puntuacion" o "id"
+    private bool FechasAsignadas = false;
+
+    private class ExcelRow
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Apellidos { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string DNI { get; set; } = string.Empty;
+        public string Telefono1 { get; set; } = string.Empty;
+        public string Fecha1 { get; set; } = string.Empty;
+        public string Fecha2 { get; set; } = string.Empty;
+        public string Fecha3 { get; set; } = string.Empty;
+        public string Fecha4 { get; set; } = string.Empty;
+        public string Fecha5 { get; set; } = string.Empty;
+        public string PuntuacionTotal { get; set; } = string.Empty;
+        public string DocumentacionFalta { get; set; } = string.Empty;
+        public string FechaRegistro { get; set; } = string.Empty;
+        public string FechaSeleccionada { get; set; } = string.Empty;
+    }
+
+    private async Task TriggerFileInput()
+    {
+        if (FileInput != null)
+        {
+            await JS.InvokeVoidAsync("eval", "document.querySelector('input[type=\"file\"]').click()");
+        }
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            SelectedFileName = file.Name;
+            SelectedFileSize = file.Size;
+            SelectedFileType = file.ContentType;
+            IsTableVisible = false;
+            FormatError = string.Empty;
+
+            // Si es un archivo Excel, leer los datos
+            if (file.Name.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+            {
+                await ReadExcelFile(file);
+                IsTableVisible = ExcelData.Count > 0;
+            }
+            else
+            {
+                ExcelData.Clear();
+            }
+        }
+    }
+
+    private void ToggleTableVisibility()
+    {
+        IsTableVisible = !IsTableVisible;
+    }
+
+    private async Task ReadExcelFile(IBrowserFile file)
+    {
+        try
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using (var stream = file.OpenReadStream(maxAllowedSize: 10485760)) // 10MB
+            {
+                var memoryStream = new MemoryStream();
+                await stream.CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
+
+                using (var package = new ExcelPackage(memoryStream))
+                {
+                    var worksheet = package.Workbook.Worksheets[0]; // Hoja1
+
+                    ExcelData.Clear();
+                    FormatError = string.Empty;
+
+                    // Leer desde la fila 2 (saltar encabezados)
+                    int rowCount = worksheet.Dimension?.Rows ?? 0;
+
+                    for (int row = 2; row <= rowCount; row++)
+                    {
+                        var idValue = worksheet.Cells[row, 21].Value?.ToString() ?? string.Empty;
+                        var puntuacionTotalValue = worksheet.Cells[row, 19].Value?.ToString() ?? string.Empty;
+
+                        // Validar que ID sea numérico si no está vacío
+                        if (!string.IsNullOrEmpty(idValue))
+                        {
+                            if (!decimal.TryParse(idValue, out _))
+                            {
+                                FormatError = "La hoja no cumple con el formato esperado";
+                                ExcelData.Clear();
+                                return;
+                            }
+                        }
+
+                        // Validar que PuntuacionTotal sea numérico si no está vacío
+                        if (!string.IsNullOrEmpty(puntuacionTotalValue))
+                        {
+                            if (!decimal.TryParse(puntuacionTotalValue, out _))
+                            {
+                                FormatError = "La hoja no cumple con el formato esperado";
+                                ExcelData.Clear();
+                                return;
+                            }
+                        }
+
+                        var excelRow = new ExcelRow
+                        {
+                            Id = idValue,                                                                        // Columna U
+                            Apellidos = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty,             // Columna E
+                            Nombre = worksheet.Cells[row, 6].Value?.ToString() ?? string.Empty,                // Columna F
+                            DNI = worksheet.Cells[row, 3].Value?.ToString() ?? string.Empty,                   // Columna C
+                            Telefono1 = worksheet.Cells[row, 7].Value?.ToString() ?? string.Empty,             // Columna G
+                            Fecha1 = worksheet.Cells[row, 11].Value?.ToString() ?? string.Empty,               // Columna K
+                            Fecha2 = worksheet.Cells[row, 12].Value?.ToString() ?? string.Empty,               // Columna L
+                            Fecha3 = worksheet.Cells[row, 13].Value?.ToString() ?? string.Empty,               // Columna M
+                            Fecha4 = worksheet.Cells[row, 14].Value?.ToString() ?? string.Empty,               // Columna N
+                            Fecha5 = worksheet.Cells[row, 15].Value?.ToString() ?? string.Empty,               // Columna O
+                            PuntuacionTotal = puntuacionTotalValue,                                              // Columna S
+                            DocumentacionFalta = worksheet.Cells[row, 20].Value?.ToString() ?? string.Empty,  // Columna T
+                            FechaRegistro = FormatearFechaHora(worksheet.Cells[row, 2].Value)                 // Columna B
+                        };
+
+                        // Solo agregar si tiene al menos un campo con datos
+                        if (!string.IsNullOrEmpty(excelRow.Apellidos) || 
+                            !string.IsNullOrEmpty(excelRow.Nombre) || 
+                            !string.IsNullOrEmpty(excelRow.DNI))
+                        {
+                            ExcelData.Add(excelRow);
+                        }
+                    }
+
+                    // Establecer el número de fechas por defecto
+                    NumeroFechas = ContarFechasConDatos();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al leer Excel: {ex.Message}");
+            ExcelData.Clear();
+            FormatError = "La hoja no cumple con el formato esperado";
+        }
+    }
+
+    private int ContarFechasConDatos()
+    {
+        int contador = 0;
+
+        // Verificar cada columna de fecha (Fecha1 a Fecha5)
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha1)))
+            contador++;
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha2)))
+            contador++;
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha3)))
+            contador++;
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha4)))
+            contador++;
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha5)))
+            contador++;
+
+        return contador;
+    }
+
+    private DateTime? GetDateValue(object? value)
+    {
+        try
+        {
+            if (value == null)
+                return null;
+
+            if (value is DateTime dt)
+                return dt;
+
+            if (value is double d && d > 0)
+                return DateTime.FromOADate(d);
+
+            if (DateTime.TryParse(value.ToString(), out var parsedDate))
+                return parsedDate;
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string FormatearFechaHora(object? value)
+    {
+        try
+        {
+            if (value == null)
+                return string.Empty;
+
+            DateTime fechaHora;
+
+            if (value is DateTime dt)
+            {
+                fechaHora = dt;
+            }
+            else if (value is double d && d > 0)
+            {
+                fechaHora = DateTime.FromOADate(d);
+            }
+            else if (DateTime.TryParse(value.ToString(), out var parsedDate))
+            {
+                fechaHora = parsedDate;
+            }
+            else
+            {
+                return string.Empty;
+            }
+
+            return fechaHora.ToString("dd/MM/yyyy HH:mm:ss");
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private void AsignarFechas()
+    {
+        if (NumeroPlazas <= 0 || NumeroFechas <= 0)
+        {
+            return;
+        }
+
+        // Obtener las fechas disponibles basadas en NumeroFechas
+        var fechasDisponibles = ObtenerFechasDisponibles();
+
+        if (fechasDisponibles.Count == 0)
+        {
+            return;
+        }
+
+        // Crear diccionario para rastrear plazas disponibles por fecha
+        var plazasPorFecha = new Dictionary<int, int>();
+        foreach (var fechaIndex in fechasDisponibles)
+        {
+            plazasPorFecha[fechaIndex] = NumeroPlazas;
+        }
+
+        // Filtrar filas sin documentación falta y ordenar por puntuación (DESC) y FechaRegistro (ASC)
+        var filasOrdenadas = ExcelData
+            .Where(row => string.IsNullOrEmpty(row.DocumentacionFalta))
+            .OrderByDescending(row => 
+            {
+                if (decimal.TryParse(row.PuntuacionTotal, out var puntuacion))
+                    return puntuacion;
+                return decimal.MinValue;
+            })
+            .ThenBy(row => row.FechaRegistro)
+            .ToList();
+
+        // Asignar fechas a cada fila según sus preferencias
+        foreach (var fila in filasOrdenadas)
+        {
+            // Obtener las fechas preferidas por esta fila en orden de prioridad
+            var preferencias = ObtenerPreferenciasFechas(fila);
+
+            bool asignada = false;
+
+            // Intentar asignar en las fechas preferidas por la fila
+            foreach (var fechaIndex in preferencias)
+            {
+                if (plazasPorFecha.ContainsKey(fechaIndex) && plazasPorFecha[fechaIndex] > 0)
+                {
+                    fila.FechaSeleccionada = ObtenerNombreFecha(fechaIndex);
+                    plazasPorFecha[fechaIndex]--;
+                    asignada = true;
+                    break;
+                }
+            }
+
+            // Si no se asignó a ninguna fecha, dejar vacío
+            if (!asignada)
+            {
+                fila.FechaSeleccionada = string.Empty;
+            }
+        }
+
+        FechasAsignadas = true;
+    }
+
+    private List<int> ObtenerPreferenciasFechas(ExcelRow fila)
+    {
+        // Lista de tuplas (prioridad, índiceFecha)
+        var preferencias = new List<(int prioridad, int fechaIndex)>();
+
+        // Verificar cada fecha y su prioridad
+        if (!string.IsNullOrEmpty(fila.Fecha1) && int.TryParse(fila.Fecha1, out var p1))
+            preferencias.Add((p1, 1));
+        if (!string.IsNullOrEmpty(fila.Fecha2) && int.TryParse(fila.Fecha2, out var p2))
+            preferencias.Add((p2, 2));
+        if (!string.IsNullOrEmpty(fila.Fecha3) && int.TryParse(fila.Fecha3, out var p3))
+            preferencias.Add((p3, 3));
+        if (!string.IsNullOrEmpty(fila.Fecha4) && int.TryParse(fila.Fecha4, out var p4))
+            preferencias.Add((p4, 4));
+        if (!string.IsNullOrEmpty(fila.Fecha5) && int.TryParse(fila.Fecha5, out var p5))
+            preferencias.Add((p5, 5));
+
+        // Ordenar por prioridad (menor número = mayor prioridad)
+        return preferencias
+            .OrderBy(x => x.prioridad)
+            .Select(x => x.fechaIndex)
+            .ToList();
+    }
+
+    private List<int> ObtenerFechasDisponibles()
+    {
+        var fechas = new List<int>();
+
+        // Revisar Fecha1 a Fecha5 para ver cuál tiene datos
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha1)))
+            fechas.Add(1);
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha2)))
+            fechas.Add(2);
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha3)))
+            fechas.Add(3);
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha4)))
+            fechas.Add(4);
+        if (ExcelData.Any(row => !string.IsNullOrEmpty(row.Fecha5)))
+            fechas.Add(5);
+
+        // Limitar al número de fechas especificado
+        return fechas.Take(NumeroFechas).ToList();
+    }
+
+    private string ObtenerNombreFecha(int fechaIndex)
+    {
+        return fechaIndex switch
+        {
+            1 => "Fecha 1",
+            2 => "Fecha 2",
+            3 => "Fecha 3",
+            4 => "Fecha 4",
+            5 => "Fecha 5",
+            _ => string.Empty
+        };
+    }
+
+    private List<ExcelRow> ObtenerFilasOrdenadas()
+    {
+        if (OrdenTabla == "id")
+        {
+            // Ordenar por ID
+            return ExcelData
+                .OrderBy(row => 
+                {
+                    if (decimal.TryParse(row.Id, out var id))
+                        return id;
+                    return decimal.MaxValue;
+                })
+                .ToList();
+        }
+        else
+        {
+            // Ordenar por Puntuación Total (descendente) y FechaRegistro (ascendente)
+            return ExcelData
+                .OrderByDescending(row => 
+                {
+                    if (decimal.TryParse(row.PuntuacionTotal, out var puntuacion))
+                        return puntuacion;
+                    return decimal.MinValue;
+                })
+                .ThenBy(row => row.FechaRegistro)
+                .ToList();
+        }
+    }
+
+    private void CambiarOrdenTabla()
+    {
+        OrdenTabla = OrdenTabla == "puntuacion" ? "id" : "puntuacion";
+    }
+
+    private List<ExcelRow> ObtenerFilasSeleccionadas()
+    {
+        // Filtrar filas que tienen FechaSeleccionada asignada
+        var filasSeleccionadas = ExcelData
+            .Where(row => !string.IsNullOrEmpty(row.FechaSeleccionada))
+            .ToList();
+
+        // Ordenar por:
+        // 1. Fecha Seleccionada (la orden natural de las fechas)
+        // 2. Puntuación Total (descendente)
+        // 3. Fecha Registro (ascendente)
+        var filasOrdenadas = filasSeleccionadas
+            .OrderBy(row => ObtenerOrdenFecha(row.FechaSeleccionada))
+            .ThenByDescending(row =>
+            {
+                if (decimal.TryParse(row.PuntuacionTotal, out var puntuacion))
+                    return puntuacion;
+                return decimal.MinValue;
+            })
+            .ThenBy(row => row.FechaRegistro)
+            .ToList();
+
+        return filasOrdenadas;
+    }
+
+    private int ObtenerOrdenFecha(string fechaSeleccionada)
+    {
+        return fechaSeleccionada switch
+        {
+            "Fecha 1" => 1,
+            "Fecha 2" => 2,
+            "Fecha 3" => 3,
+            "Fecha 4" => 4,
+            "Fecha 5" => 5,
+            _ => 99
+        };
+    }
+}
