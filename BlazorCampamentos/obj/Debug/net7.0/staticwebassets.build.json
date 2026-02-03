@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "vO6eskqr5ai3huj12yJo7fbQSRaBJMvZ950JMUze1HQ=",
+  "Hash": "3uCCIZ6V8WklhkweeiSx0ap2aPSBO0EpyUFrMAKOCSc=",
   "Source": "BlazorCampamentos",
   "BasePath": "/",
   "Mode": "Root",
@@ -7938,6 +7938,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/css/app.css"
+    },
+    {
+      "Identity": "/Users/franciscojavierhidalgorojo/Desktop/NetCore_Proyectos/BlazorCampamentos/BlazorCampamentos/wwwroot/css/FileUploadForm.css",
+      "SourceId": "BlazorCampamentos",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/franciscojavierhidalgorojo/Desktop/NetCore_Proyectos/BlazorCampamentos/BlazorCampamentos/wwwroot/",
+      "BasePath": "/",
+      "RelativePath": "css/FileUploadForm.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/css/FileUploadForm.css"
     },
     {
       "Identity": "/Users/franciscojavierhidalgorojo/Desktop/NetCore_Proyectos/BlazorCampamentos/BlazorCampamentos/wwwroot/index.html",
