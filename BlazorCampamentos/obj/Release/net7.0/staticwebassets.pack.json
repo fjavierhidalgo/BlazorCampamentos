@@ -1,0 +1,41 @@
+{
+  "Files": [
+    {
+      "Id": "/Users/franciscojavierhidalgorojo/Desktop/NetCore_Proyectos/BlazorCampamentos/BlazorCampamentos/bin/Release/net7.0/wwwroot/_framework/blazor.webassembly.js",
+      "PackagePath": "staticwebassets/_framework/blazor.webassembly.js"
+    },
+    {
+      "Id": "/Users/franciscojavierhidalgorojo/Desktop/NetCore_Proyectos/BlazorCampamentos/BlazorCampamentos/obj/Release/net7.0/compressed/s5qqqidt0p.gz",
+      "PackagePath": "staticwebassets/_framework/blazor.webassembly.js.gz"
+    },
+    {
+      "Id": "/Users/franciscojavierhidalgorojo/Desktop/NetCore_Proyectos/BlazorCampamentos/BlazorCampamentos/wwwroot/css/FileUploadForm.css",
+      "PackagePath": "staticwebassets/css/FileUploadForm.css"
+    },
+    {
+      "Id": "/Users/franciscojavierhidalgorojo/Desktop/NetCore_Proyectos/BlazorCampamentos/BlazorCampamentos/wwwroot/css/app.css",
+      "PackagePath": "staticwebassets/css/app.css"
+    },
+    {
+      "Id": "/Users/franciscojavierhidalgorojo/Desktop/NetCore_Proyectos/BlazorCampamentos/BlazorCampamentos/wwwroot/index.html",
+      "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "obj/Release/net7.0/staticwebassets/msbuild.BlazorCampamentos.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Release/net7.0/staticwebassets/msbuild.build.BlazorCampamentos.props",
+      "PackagePath": "build\\BlazorCampamentos.props"
+    },
+    {
+      "Id": "obj/Release/net7.0/staticwebassets/msbuild.buildMultiTargeting.BlazorCampamentos.props",
+      "PackagePath": "buildMultiTargeting\\BlazorCampamentos.props"
+    },
+    {
+      "Id": "obj/Release/net7.0/staticwebassets/msbuild.buildTransitive.BlazorCampamentos.props",
+      "PackagePath": "buildTransitive\\BlazorCampamentos.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
