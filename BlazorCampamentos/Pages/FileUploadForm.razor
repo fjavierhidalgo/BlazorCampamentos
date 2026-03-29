@@ -462,7 +462,7 @@
                     return puntuacion;
                 return decimal.MinValue;
             })
-            .ThenBy(row => row.FechaRegistro)
+            .ThenBy(row => ParseFechaRegistro(row.FechaRegistro))
             .ToList();
 
         // Asignar fechas a cada fila según sus preferencias
@@ -605,7 +605,7 @@
                     return puntuacion;
                 return decimal.MinValue;
             })
-            .ThenBy(row => row.FechaRegistro)
+            .ThenBy(row => ParseFechaRegistro(row.FechaRegistro))
             .ToList();
 
         return filasOrdenadas;
@@ -622,5 +622,21 @@
             "Fecha 5" => 5,
             _ => 99
         };
+    }
+
+    private DateTime ParseFechaRegistro(string fechaRegistroStr)
+    {
+        if (string.IsNullOrEmpty(fechaRegistroStr))
+            return DateTime.MaxValue; // Para que los vacios queden al final
+    
+        // Formato esperado: "dd/MM/yyyy HH:mm:ss"
+        if (DateTime.TryParseExact(fechaRegistroStr, "dd/MM/yyyy HH:mm:ss", 
+            System.Globalization.CultureInfo.InvariantCulture, 
+            System.Globalization.DateTimeStyles.None, out var fecha))
+        {
+            return fecha;
+        }
+    
+        return DateTime.MaxValue; // Por si el formato no coincide
     }
 }
